@@ -57,16 +57,17 @@ The parameter dimension is `[angle, delay, Doppler]`.
 
 ## Citation
 
-@ARTICLE{11159304,
-  author={Wang, Kailong and Petropulu, Athina},
-  journal={IEEE Journal on Selected Areas in Communications}, 
-  title={ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays}, 
-  year={2026},
-  volume={44},
-  number={},
-  pages={229-244},
-  keywords={Transmitting antennas;OFDM;Receiving antennas;MIMO;Symbols;Radar antennas;Integrated sensing and communication;Radar tracking;Radar;Complexity theory;OTFS;integrated sensing and communication;MIMO;virtual array;communication-sensing trade-off},
-  doi={10.1109/JSAC.2025.3608761}}
+```bibtex
+@article{11159304,
+  author  = {Wang, Kailong and Petropulu, Athina},
+  title   = {ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays},
+  journal = {IEEE Journal on Selected Areas in Communications},
+  year    = {2026},
+  volume  = {44},
+  pages   = {229--244},
+  doi     = {10.1109/JSAC.2025.3608761}
+}
+```
 
 ## License
 
