@@ -1,0 +1,157 @@
+[
+    {
+        "angle": -60,
+        "delay": 7,
+        "doppler": -3.8
+    },
+    {
+        "angle": -56,
+        "delay": 12,
+        "doppler": 4.4
+    },
+    {
+        "angle": -52,
+        "delay": 7,
+        "doppler": -4.1
+    },
+    {
+        "angle": -48,
+        "delay": 16,
+        "doppler": 4.8
+    },
+    {
+        "angle": -44,
+        "delay": 11,
+        "doppler": 4.5
+    },
+    {
+        "angle": -40,
+        "delay": 5,
+        "doppler": -4.9
+    },
+    {
+        "angle": -36,
+        "delay": 15,
+        "doppler": 4.9
+    },
+    {
+        "angle": -32,
+        "delay": 5,
+        "doppler": 5.6
+    },
+    {
+        "angle": -28,
+        "delay": 19,
+        "doppler": -5.3
+    },
+    {
+        "angle": -24,
+        "delay": 9,
+        "doppler": 6.0
+    },
+    {
+        "angle": -20,
+        "delay": 2,
+        "doppler": -5.7
+    },
+    {
+        "angle": -16,
+        "delay": 13,
+        "doppler": -6.4
+    },
+    {
+        "angle": -12,
+        "delay": 3,
+        "doppler": 1.6
+    },
+    {
+        "angle": -8,
+        "delay": 17,
+        "doppler": 6.8
+    },
+    {
+        "angle": -4,
+        "delay": 7,
+        "doppler": -2.0
+    },
+    {
+        "angle": 0,
+        "delay": 4,
+        "doppler": -3.1
+    },
+    {
+        "angle": 4,
+        "delay": 17,
+        "doppler": 5.1
+    },
+    {
+        "angle": 8,
+        "delay": 3,
+        "doppler": -5.4
+    },
+    {
+        "angle": 12,
+        "delay": 13,
+        "doppler": 4.7
+    },
+    {
+        "angle": 16,
+        "delay": 18,
+        "doppler": 5.0
+    },
+    {
+        "angle": 20,
+        "delay": 3,
+        "doppler": -5.5
+    },
+    {
+        "angle": 24,
+        "delay": 14,
+        "doppler": 4.6
+    },
+    {
+        "angle": 28,
+        "delay": 5,
+        "doppler": 3.9
+    },
+    {
+        "angle": 32,
+        "delay": 10,
+        "doppler": -4.2
+    },
+    {
+        "angle": 36,
+        "delay": 20,
+        "doppler": 3.5
+    },
+    {
+        "angle": 40,
+        "delay": 10,
+        "doppler": -3.9
+    },
+    {
+        "angle": 44,
+        "delay": 16,
+        "doppler": -3.1
+    },
+    {
+        "angle": 48,
+        "delay": 2,
+        "doppler": 3.4
+    },
+    {
+        "angle": 52,
+        "delay": 12,
+        "doppler": 2.7
+    },
+    {
+        "angle": 56,
+        "delay": 17,
+        "doppler": -3.0
+    },
+    {
+        "angle": 60,
+        "delay": 8,
+        "doppler": 2.3
+    }
+]

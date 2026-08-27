@@ -1,0 +1,607 @@
+[
+    {
+        "angle": -60,
+        "delay": 7,
+        "doppler": -3.8
+    },
+    {
+        "angle": -59,
+        "delay": 4,
+        "doppler": 5.5
+    },
+    {
+        "angle": -58,
+        "delay": 5,
+        "doppler": -1.8
+    },
+    {
+        "angle": -57,
+        "delay": 11,
+        "doppler": 2.6
+    },
+    {
+        "angle": -56,
+        "delay": 12,
+        "doppler": 4.4
+    },
+    {
+        "angle": -55,
+        "delay": 12,
+        "doppler": 5.1
+    },
+    {
+        "angle": -54,
+        "delay": 19,
+        "doppler": 1.5
+    },
+    {
+        "angle": -53,
+        "delay": 20,
+        "doppler": 3.3
+    },
+    {
+        "angle": -52,
+        "delay": 7,
+        "doppler": -4.1
+    },
+    {
+        "angle": -51,
+        "delay": 8,
+        "doppler": 5.9
+    },
+    {
+        "angle": -50,
+        "delay": 3,
+        "doppler": -6.4
+    },
+    {
+        "angle": -49,
+        "delay": 15,
+        "doppler": -3.0
+    },
+    {
+        "angle": -48,
+        "delay": 16,
+        "doppler": 4.8
+    },
+    {
+        "angle": -47,
+        "delay": 3,
+        "doppler": 5.6
+    },
+    {
+        "angle": -46,
+        "delay": 4,
+        "doppler": -1.9
+    },
+    {
+        "angle": -45,
+        "delay": 18,
+        "doppler": 2.7
+    },
+    {
+        "angle": -44,
+        "delay": 11,
+        "doppler": 4.5
+    },
+    {
+        "angle": -43,
+        "delay": 12,
+        "doppler": -6.3
+    },
+    {
+        "angle": -42,
+        "delay": 13,
+        "doppler": 2.6
+    },
+    {
+        "angle": -41,
+        "delay": 19,
+        "doppler": 3.4
+    },
+    {
+        "angle": -40,
+        "delay": 5,
+        "doppler": -4.9
+    },
+    {
+        "angle": -39,
+        "delay": 2,
+        "doppler": 1.5
+    },
+    {
+        "angle": -38,
+        "delay": 8,
+        "doppler": 2.3
+    },
+    {
+        "angle": -37,
+        "delay": 9,
+        "doppler": -4.1
+    },
+    {
+        "angle": -36,
+        "delay": 15,
+        "doppler": 4.9
+    },
+    {
+        "angle": -35,
+        "delay": 14,
+        "doppler": 6.2
+    },
+    {
+        "angle": -34,
+        "delay": 17,
+        "doppler": -3.0
+    },
+    {
+        "angle": -33,
+        "delay": 4,
+        "doppler": 3.8
+    },
+    {
+        "angle": -32,
+        "delay": 5,
+        "doppler": 5.6
+    },
+    {
+        "angle": -31,
+        "delay": 6,
+        "doppler": -1.9
+    },
+    {
+        "angle": -30,
+        "delay": 8,
+        "doppler": -2.3
+    },
+    {
+        "angle": -29,
+        "delay": 13,
+        "doppler": 4.5
+    },
+    {
+        "angle": -28,
+        "delay": 19,
+        "doppler": -5.3
+    },
+    {
+        "angle": -27,
+        "delay": 20,
+        "doppler": 1.6
+    },
+    {
+        "angle": -26,
+        "delay": 2,
+        "doppler": 3.4
+    },
+    {
+        "angle": -25,
+        "delay": 20,
+        "doppler": 4.5
+    },
+    {
+        "angle": -24,
+        "delay": 9,
+        "doppler": 6.0
+    },
+    {
+        "angle": -23,
+        "delay": 10,
+        "doppler": 2.3
+    },
+    {
+        "angle": -22,
+        "delay": 16,
+        "doppler": -3.1
+    },
+    {
+        "angle": -21,
+        "delay": 17,
+        "doppler": 4.9
+    },
+    {
+        "angle": -20,
+        "delay": 2,
+        "doppler": -5.7
+    },
+    {
+        "angle": -19,
+        "delay": 5,
+        "doppler": -2.0
+    },
+    {
+        "angle": -18,
+        "delay": 6,
+        "doppler": 3.8
+    },
+    {
+        "angle": -17,
+        "delay": 12,
+        "doppler": 4.6
+    },
+    {
+        "angle": -16,
+        "delay": 13,
+        "doppler": -6.4
+    },
+    {
+        "angle": -15,
+        "delay": 11,
+        "doppler": 3.4
+    },
+    {
+        "angle": -14,
+        "delay": 20,
+        "doppler": 3.5
+    },
+    {
+        "angle": -13,
+        "delay": 2,
+        "doppler": -5.3
+    },
+    {
+        "angle": -12,
+        "delay": 3,
+        "doppler": 1.6
+    },
+    {
+        "angle": -11,
+        "delay": 9,
+        "doppler": 2.4
+    },
+    {
+        "angle": -10,
+        "delay": 6,
+        "doppler": -1.8
+    },
+    {
+        "angle": -9,
+        "delay": 16,
+        "doppler": 5.0
+    },
+    {
+        "angle": -8,
+        "delay": 17,
+        "doppler": 6.8
+    },
+    {
+        "angle": -7,
+        "delay": 18,
+        "doppler": -3.1
+    },
+    {
+        "angle": -6,
+        "delay": 5,
+        "doppler": 3.9
+    },
+    {
+        "angle": -5,
+        "delay": 16,
+        "doppler": 5.9
+    },
+    {
+        "angle": -4,
+        "delay": 7,
+        "doppler": -2.0
+    },
+    {
+        "angle": -3,
+        "delay": 13,
+        "doppler": 2.8
+    },
+    {
+        "angle": -2,
+        "delay": 14,
+        "doppler": 4.6
+    },
+    {
+        "angle": -1,
+        "delay": 20,
+        "doppler": -5.4
+    },
+    {
+        "angle": 0,
+        "delay": 4,
+        "doppler": -3.1
+    },
+    {
+        "angle": 1,
+        "delay": 6,
+        "doppler": 4.0
+    },
+    {
+        "angle": 2,
+        "delay": 19,
+        "doppler": -3.2
+    },
+    {
+        "angle": 3,
+        "delay": 18,
+        "doppler": 6.9
+    },
+    {
+        "angle": 4,
+        "delay": 17,
+        "doppler": 5.1
+    },
+    {
+        "angle": 5,
+        "delay": 15,
+        "doppler": 6.7
+    },
+    {
+        "angle": 6,
+        "delay": 10,
+        "doppler": 2.5
+    },
+    {
+        "angle": 7,
+        "delay": 4,
+        "doppler": 1.7
+    },
+    {
+        "angle": 8,
+        "delay": 3,
+        "doppler": -5.4
+    },
+    {
+        "angle": 9,
+        "delay": 2,
+        "doppler": 3.6
+    },
+    {
+        "angle": 10,
+        "delay": 9,
+        "doppler": -4.3
+    },
+    {
+        "angle": 11,
+        "delay": 14,
+        "doppler": -6.5
+    },
+    {
+        "angle": 12,
+        "delay": 13,
+        "doppler": 4.7
+    },
+    {
+        "angle": 13,
+        "delay": 7,
+        "doppler": 3.9
+    },
+    {
+        "angle": 14,
+        "delay": 6,
+        "doppler": -2.1
+    },
+    {
+        "angle": 15,
+        "delay": 19,
+        "doppler": 2.1
+    },
+    {
+        "angle": 16,
+        "delay": 18,
+        "doppler": 5.0
+    },
+    {
+        "angle": 17,
+        "delay": 17,
+        "doppler": -3.2
+    },
+    {
+        "angle": 18,
+        "delay": 11,
+        "doppler": 2.4
+    },
+    {
+        "angle": 19,
+        "delay": 10,
+        "doppler": 6.1
+    },
+    {
+        "angle": 20,
+        "delay": 3,
+        "doppler": -5.5
+    },
+    {
+        "angle": 21,
+        "delay": 3,
+        "doppler": 3.5
+    },
+    {
+        "angle": 22,
+        "delay": 2,
+        "doppler": 1.7
+    },
+    {
+        "angle": 23,
+        "delay": 20,
+        "doppler": -5.4
+    },
+    {
+        "angle": 24,
+        "delay": 14,
+        "doppler": 4.6
+    },
+    {
+        "angle": 25,
+        "delay": 13,
+        "doppler": 4.8
+    },
+    {
+        "angle": 26,
+        "delay": 7,
+        "doppler": -2.0
+    },
+    {
+        "angle": 27,
+        "delay": 6,
+        "doppler": 5.7
+    },
+    {
+        "angle": 28,
+        "delay": 5,
+        "doppler": 3.9
+    },
+    {
+        "angle": 29,
+        "delay": 18,
+        "doppler": -3.1
+    },
+    {
+        "angle": 30,
+        "delay": 7,
+        "doppler": -2.6
+    },
+    {
+        "angle": 31,
+        "delay": 16,
+        "doppler": 5.0
+    },
+    {
+        "angle": 32,
+        "delay": 10,
+        "doppler": -4.2
+    },
+    {
+        "angle": 33,
+        "delay": 9,
+        "doppler": 2.4
+    },
+    {
+        "angle": 34,
+        "delay": 3,
+        "doppler": 1.6
+    },
+    {
+        "angle": 35,
+        "delay": 17,
+        "doppler": 6.3
+    },
+    {
+        "angle": 36,
+        "delay": 20,
+        "doppler": 3.5
+    },
+    {
+        "angle": 37,
+        "delay": 14,
+        "doppler": 2.7
+    },
+    {
+        "angle": 38,
+        "delay": 13,
+        "doppler": -6.4
+    },
+    {
+        "angle": 39,
+        "delay": 12,
+        "doppler": 4.6
+    },
+    {
+        "angle": 40,
+        "delay": 10,
+        "doppler": -3.9
+    },
+    {
+        "angle": 41,
+        "delay": 5,
+        "doppler": -2.0
+    },
+    {
+        "angle": 42,
+        "delay": 4,
+        "doppler": 5.7
+    },
+    {
+        "angle": 43,
+        "delay": 17,
+        "doppler": 4.9
+    },
+    {
+        "angle": 44,
+        "delay": 16,
+        "doppler": -3.1
+    },
+    {
+        "angle": 45,
+        "delay": 6,
+        "doppler": 5.2
+    },
+    {
+        "angle": 46,
+        "delay": 9,
+        "doppler": 6.0
+    },
+    {
+        "angle": 47,
+        "delay": 8,
+        "doppler": -4.2
+    },
+    {
+        "angle": 48,
+        "delay": 2,
+        "doppler": 3.4
+    },
+    {
+        "angle": 49,
+        "delay": 20,
+        "doppler": 1.6
+    },
+    {
+        "angle": 50,
+        "delay": 14,
+        "doppler": -4.7
+    },
+    {
+        "angle": 51,
+        "delay": 13,
+        "doppler": 4.5
+    },
+    {
+        "angle": 52,
+        "delay": 12,
+        "doppler": 2.7
+    },
+    {
+        "angle": 53,
+        "delay": 6,
+        "doppler": -1.9
+    },
+    {
+        "angle": 54,
+        "delay": 5,
+        "doppler": 5.6
+    },
+    {
+        "angle": 55,
+        "delay": 4,
+        "doppler": 3.8
+    },
+    {
+        "angle": 56,
+        "delay": 17,
+        "doppler": -3.0
+    },
+    {
+        "angle": 57,
+        "delay": 16,
+        "doppler": 6.7
+    },
+    {
+        "angle": 58,
+        "delay": 15,
+        "doppler": 4.9
+    },
+    {
+        "angle": 59,
+        "delay": 9,
+        "doppler": -4.1
+    },
+    {
+        "angle": 60,
+        "delay": 8,
+        "doppler": 2.3
+    }
+]

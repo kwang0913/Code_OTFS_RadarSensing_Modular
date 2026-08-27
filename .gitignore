@@ -1,0 +1,32 @@
+# Local tooling and agent state
+.codegraph/
+.firecrawl/
+.codex/
+.agents/
+.remember/
+.sisyphus/
+
+# Generated simulation output
+results/
+Figures/
+Temp/
+*.mat
+*.asv
+*.eps
+*.fig
+*.png
+*.out
+*.err
+slurm-*
+
+# Archives and local profiles
+*.zip
+local_*_profile.mat
+
+# MATLAB/editor/OS state
+*.autosave
+*.m~
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
