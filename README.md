@@ -16,7 +16,7 @@ This is the code for [ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays
 The package resolves its target pool relative to its own location, so the caller does not need to change the working directory.
 
 ```matlab
-project_dir = '/path/to/Code_OTFS_RadarSensing_Modula';
+project_dir = '/path/to/Code_OTFS_RadarSensing_Modular';
 addpath(project_dir);
 
 params = config_params_HF(struct( ...
