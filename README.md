@@ -3,6 +3,8 @@
 This is the code for [ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays
 ](https://ieeexplore.ieee.org/abstract/document/11159304)
 
+**Update (2026-09-14):** Added fractional delay support in channel simulation and SSR estimation, alongside fractional Doppler.
+
 ## Requirements
 
 - MATLAB R2024b (verified) and above
@@ -39,8 +41,12 @@ run(fullfile(project_dir, 'run_single.m'));
 `config_params_HF` supports three target modes, in priority order:
 
 1. `targets`: explicit deterministic target structs.
-2. `n_targets`: random selection from the packaged pool, optionally modified by angle, delay, or Doppler ranges.
+2. `n_targets`: random selection from the packaged pool; delay/Doppler range overrides sample a `0.1`-tap grid.
 3. `selected_targets`: fixed indices into the packaged pool.
+
+SSR stops at `targets_num` by default; set `params.ssr.max_J` to a positive integer to override this limit (`[]` = default). Residual-based stopping may stop earlier.
+
+Fractional delay: set `targets.delay` directly or use `params.epsilon` to override its fractional part (`[]` preserves input delays; scalar or per-target values in `[0,1)`). SSR delay/Doppler grid steps are `params.ssr.length.r/v` (both default to `0.1` tap).
 
 ## Outputs
 

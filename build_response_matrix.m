@@ -1,5 +1,5 @@
 function Phi = build_response_matrix(ests, params)
-%BUILD_RESPONSE_MATRIX Channel dictionary using full xi_j[n]*H^j[n,m] with fractional Doppler.
+%BUILD_RESPONSE_MATRIX Channel dictionary using xi_j*H^j[n,m] with real delay and Doppler.
 %   Monostatic DFRC: Tx steering uses ests.AoAs.
 
     pilot_blocks = params.pilot_blocks;

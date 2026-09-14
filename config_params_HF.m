@@ -1,6 +1,6 @@
 function params = config_params_HF(overrides)
 %CONFIG_PARAMS_HF High-frequency (24.25 GHz) monostatic DFRC simulation parameters.
-%   Monostatic: AoA = AoD always; round-trip delay taps = round(2*range/c * fsamp).
+%   Monostatic: AoA = AoD always; round-trip delay taps = 2*range/c * fsamp.
 
     params.config_name = 'hf';
 
@@ -13,8 +13,8 @@ function params = config_params_HF(overrides)
     params.padType = 'RCP';         % 'CP' | 'RCP' | 'ZP' | 'RZP' | 'NONE'
 
     % --- System ---
-    params.Nt = 4;
-    params.Nr = 16;
+    params.Nt = 2;
+    params.Nr = 2;
     params.fc = 24.25e9;  % Hz
     params.M  = 128;      % delay bins (subcarriers)
     params.N  = 64;       % Doppler bins (OTFS symbols)
@@ -46,18 +46,24 @@ function params = config_params_HF(overrides)
     params.targets = [];
 
     % Mode 2: random — pick n_targets from pool, optionally override with ranges
-    params.n_targets = [];
-    params.aoa_range = [];             % angle list [deg], e.g. -60:5:60 (empty = use pool values)
-    params.delay_range = [];           % scalar (max) or [lo, hi] for randi (empty = use pool values)
-    params.doppler_range = [3 6];      % Doppler magnitude range [taps] (empty = use pool values)
+    params.n_targets = [1];
+    params.aoa_range = [-60 60];             % angle list [deg], e.g. -60:5:60 (empty = use pool values)
+    params.delay_range = [0 12];      % 0.1-tap grid; scalar max means [1,max], or [lo,hi]; [] uses pool
+    params.doppler_range = [3 6];     % magnitude on 0.1-tap grid, random sign; [] uses pool
 
     % Mode 1: pool selection (default if modes 3 & 2 inactive)
-    params.selected_targets = [5, 10, 15, 20];
+    params.selected_targets = [5];
     params.targets_file = 'targets/pool_5.json';
 
     % Post-processing (applied on top of any mode)
     params.kappa = [];                 % fixed fractional Doppler
+    params.epsilon = [];               % fractional delay override; scalar or one value per target in [0,1)
     params.gain = 1;                   % fixed path gain; scalar or one value per target
+
+    % --- SSR stopping ---
+    % [] uses targets_num; a positive integer overrides that limit.
+    % Residual-based stopping can stop earlier.
+    params.ssr.max_J = [];
 
     % --- SSR Grid: search range (+/- from coarse estimate) ---
     params.ssr.range.a = 5;   % angle
@@ -66,7 +72,7 @@ function params = config_params_HF(overrides)
 
     % --- SSR Grid: step length ---
     params.ssr.length.a = 1;
-    params.ssr.length.r = 1;
+    params.ssr.length.r = 0.1;
     params.ssr.length.v = 0.1;
 
     % Apply overrides before derived computations
