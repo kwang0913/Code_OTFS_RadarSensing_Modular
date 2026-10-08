@@ -64,7 +64,7 @@ The parameter dimension is `[angle, delay, Doppler]`.
 ## Citation
 
 ```bibtex
-@article{11159304,
+@article{wang2026isacmimo,
   author  = {Wang, Kailong and Petropulu, Athina},
   title   = {ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays},
   journal = {IEEE Journal on Selected Areas in Communications},
