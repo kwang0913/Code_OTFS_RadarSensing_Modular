@@ -23,13 +23,7 @@ function [per_target_err, matched_ests] = compute_pct_errors(chanParams, ests)
 
     if n_est == 0 || n_true == 0, return; end
 
-    % Build distance matrix explicitly to avoid implicit expansion issues
-    dist = zeros(n_true, n_est);
-    for ti = 1:n_true
-        for ei = 1:n_est
-            dist(ti, ei) = abs(chanParams.AoAs(ti) - ests.AoAs(ei));
-        end
-    end
+    dist = abs(chanParams.AoAs(:) - ests.AoAs(:).');
     [~, order] = sort(dist(:));
     used_true = false(1, n_true);
     used_est  = false(1, n_est);

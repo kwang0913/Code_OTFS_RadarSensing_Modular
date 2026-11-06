@@ -13,8 +13,8 @@ function params = config_params_HF(overrides)
     params.padType = 'RCP';         % 'CP' | 'RCP' | 'ZP' | 'RZP' | 'NONE'
 
     % --- System ---
-    params.Nt = 2;
-    params.Nr = 2;
+    params.Nt = 4;
+    params.Nr = 16;
     params.fc = 24.25e9;  % Hz
     params.M  = 128;      % delay bins (subcarriers)
     params.N  = 64;       % Doppler bins (OTFS symbols)
@@ -31,6 +31,8 @@ function params = config_params_HF(overrides)
     % --- Simulation Loop ---
     params.SNR_db_list = 20;          % single SNR for debugging; use e.g. -10:5:30 for sweeps
     params.trials = 1;
+    params.seed = 0;                  % trial t uses rng(seed + t)
+    params.n_workers = 6;             % parfor workers when trials > 1; 0 = serial
 
     % --- Pilot layout ---
     params.n_private = 16;
@@ -46,13 +48,13 @@ function params = config_params_HF(overrides)
     params.targets = [];
 
     % Mode 2: random — pick n_targets from pool, optionally override with ranges
-    params.n_targets = [1];
-    params.aoa_range = [-60 60];             % angle list [deg], e.g. -60:5:60 (empty = use pool values)
+    params.n_targets = [];
+    params.aoa_range = [];            % discrete candidate angles [deg] (list, not an interval), sampled without replacement: n_targets <= numel; [] uses pool
     params.delay_range = [0 12];      % 0.1-tap grid; scalar max means [1,max], or [lo,hi]; [] uses pool
     params.doppler_range = [3 6];     % magnitude on 0.1-tap grid, random sign; [] uses pool
 
     % Mode 1: pool selection (default if modes 3 & 2 inactive)
-    params.selected_targets = [5];
+    params.selected_targets = [5, 10, 15, 20];
     params.targets_file = 'targets/pool_5.json';
 
     % Post-processing (applied on top of any mode)

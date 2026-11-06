@@ -5,12 +5,14 @@ This is the code for [ISAC MIMO Systems With OTFS Waveforms and Virtual Arrays
 
 **Update (2026-09-14):** Added fractional delay support in channel simulation and SSR estimation, alongside fractional Doppler.
 
+**Update (2026-11-06):** Pilot measurements use regularized division, and coarse Doppler candidates are wrapped to (-N/2, N/2] and deduplicated.
+
 ## Requirements
 
 - MATLAB R2024b (verified) and above
 - Communications Toolbox for QAM/PSK modulation, bit conversion, and AWGN
 - Signal Processing Toolbox for `findpeaks`
-- Parallel Computing Toolbox only when `trials > 1`
+- Parallel Computing Toolbox only when `trials > 1` and `params.n_workers > 0`
 
 
 ## Quick start
@@ -27,7 +29,7 @@ params = config_params_HF(struct( ...
     'show_figures', false, ...
     'verbose_output', true));
 
-results = run_sim_new(params);
+results = run_sim(params);
 ```
 
 To run the default plotting script:
@@ -48,18 +50,21 @@ SSR stops at `targets_num` by default; set `params.ssr.max_J` to a positive inte
 
 Fractional delay: set `targets.delay` directly or use `params.epsilon` to override its fractional part (`[]` preserves input delays; scalar or per-target values in `[0,1)`). SSR delay/Doppler grid steps are `params.ssr.length.r/v` (both default to `0.1` tap).
 
+Trial `t` is seeded with `rng(params.seed + t)`; trials run in parallel on `params.n_workers` workers when `trials > 1` (`0` = serial).
+
 ## Outputs
 
-`run_sim_new` returns:
+`run_sim` returns:
 
 - `pct_err_coarse`: coarse-estimator errors with dimensions `(trials, SNR, target, parameter)`.
 - `pct_err_ssr`: refinement errors with the same dimensions.
 - `n_detected`: target count per trial and SNR.
+- `failed`: logical `(trials, SNR)` flag for trials that errored in the parallel path.
 - `SNR_db_list`: simulated SNR values.
 - `params`: resolved configuration.
 - `chanParams`: final single-trial ground truth, when available.
 
-The parameter dimension is `[angle, delay, Doppler]`.
+The parameter dimension is `[angle, delay, Doppler]`. Replot saved results with `plot_results(results)`.
 
 ## Citation
 

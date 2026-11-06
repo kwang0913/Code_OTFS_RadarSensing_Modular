@@ -1,4 +1,4 @@
-function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, n0)
+function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, n0)
 %ESTIMATE_SSR_PARAMS Direct OMP on fine dictionary for monostatic DFRC.
 %   Builds a fine (angle, delay, Doppler) dictionary from coarse candidate
 %   neighborhoods, then runs OMP with residual-reduction threshold stopping.
@@ -22,7 +22,7 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, n0)
     end
 
     n_meas = compute_n_meas(pilot_blocks, Nr);
-    y = build_measurement_vector(YTF, XTF, pilot_blocks, Nr);
+    y = build_measurement_vector(YTF, XTF, pilot_blocks, Nr, n0);
 
     % --- Fine grid config ---
     step_a = params.ssr.length.a;  % angle step (degrees)
@@ -179,12 +179,9 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, n0)
             subplot(1, 3, fi); hold on;
             stem(final_ests.(fields{fi}), gain_mag, 'b', 'filled', ...
                 'LineWidth', 1.5, 'DisplayName', 'SSR Est.');
-            if isfield(params, 'chanParams_for_plot')
-                cp = params.chanParams_for_plot;
-                for j = 1:length(cp.(fields{fi}))
-                    xline(cp.(fields{fi})(j), 'r--', 'LineWidth', 2, ...
-                        'DisplayName', sprintf('True %.1f', cp.(fields{fi})(j)));
-                end
+            for j = 1:length(chanParams.(fields{fi}))
+                xline(chanParams.(fields{fi})(j), 'r--', 'LineWidth', 2, ...
+                    'DisplayName', sprintf('True %.1f', chanParams.(fields{fi})(j)));
             end
             hold off;
             xlabel(labels{fi}); ylabel('|Gain|');

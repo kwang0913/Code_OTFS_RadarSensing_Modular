@@ -30,3 +30,7 @@ local_*_profile.mat
 Thumbs.db
 .vscode/
 .idea/
+
+# Experimental variants (kept on disk, untracked)
+run_sim_new.m
+estimate_coarse_params_new.m

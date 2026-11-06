@@ -132,7 +132,8 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     %  Stage 2: xcorr2 for delay-Doppler (with beamforming when Nr > 1)
     % --------------------------------------------------------------------
     xcorr2_thresh = 0.1;  % fraction of per-bin peak max for local maxima detection
-    doppler_taps  = -(N-1):(N-1);
+    doppler_taps  = -(N-1):(N-1);  % xcorr2 lags; lags v and v-N alias (DD is periodic in Doppler)
+    wrapN = @(v) N/2 - mod(N/2 - v, N);  % principal interval (-N/2, N/2]
     n_ang = length(ang);
     XDD_flat = reshape(permute(XDD, [3,1,2]), Nt, []);  % Nt x (M*N)
 
@@ -191,7 +192,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
         for k = 1:length(r_idx)
             all_angles(end+1)    = ang(p); %#ok<AGROW>
             all_delays(end+1)    = r_idx(k) - 1; %#ok<AGROW>
-            all_dopplers(end+1)  = doppler_taps(c_idx(k)); %#ok<AGROW>
+            all_dopplers(end+1)  = wrapN(doppler_taps(c_idx(k))); %#ok<AGROW>
             all_peak_vals(end+1) = Hdd_pos(r_idx(k), c_idx(k)); %#ok<AGROW>
         end
     end
@@ -206,11 +207,11 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
         [row_pk, col_pk] = ind2sub(size(Hdd_pos), pk_lin);
         all_angles    = ang(1);
         all_delays    = row_pk - 1;
-        all_dopplers  = doppler_taps(col_pk);
+        all_dopplers  = wrapN(doppler_taps(col_pk));
         all_peak_vals = Hdd_pos(row_pk, col_pk);
     end
 
-    % --- Deduplicate: for shared (delay, Doppler) peaks at close angles, keep strongest ---
+    % --- Deduplicate: for shared (delay, Doppler) peaks at close angles (incl. wrapped Doppler aliases), keep strongest ---
     % Only treat as leakage if angles are within ~1 beamwidth
     beamwidth_deg = asind(1 / (Nr * params.ddlr));  % ULA 3dB beamwidth ≈ asin(1/(Nr·d/λ))
     ang_dedup_thresh = beamwidth_deg;
@@ -296,7 +297,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
             est_set_dopplers = pathDopplers(tgt_mask);
             for qi = 1:length(pk_r)
                 pk_delay = pk_r(qi) - 1;
-                pk_dopp  = doppler_taps(pk_c(qi));
+                pk_dopp  = wrapN(doppler_taps(pk_c(qi)));
                 pk_mag   = Hdd_pos_plot(pk_r(qi), pk_c(qi));
 
                 % Check if this peak is a selected estimate
@@ -328,7 +329,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     coarse_for_phi.pathDopplers = pathDopplers;
 
     Phi = build_response_matrix(coarse_for_phi, params);
-    y   = build_measurement_vector(YTF, XTF, params.pilot_blocks, Nr);
+    y   = build_measurement_vector(YTF, XTF, params.pilot_blocks, Nr, n0);
     pathGains = (Phi' * Phi + n0 * eye(n_detected)) \ (Phi' * y);
 
     %% -------------------------------------------------------------------
