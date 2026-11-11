@@ -91,4 +91,4 @@ The parameter dimension is `[angle, delay, Doppler]`. Replot saved results with 
 
 ## License
 
-BSD 3-Clause. See [`LICENSE`](LICENSE).
+Copyright 2026 Kailong Wang. Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE).
