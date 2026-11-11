@@ -7,10 +7,17 @@ function params = config_params_HF(overrides)
     % --- Control ---
     params.show_figures = true;
     params.verbose_output = true;
+    params.coarse_method = 'xcorr';     % 'xcorr' (estimate_coarse_params) | 'fused' (estimate_coarse_params_fused, needs delay and doppler blocks in pilot_blocks_def)
 
+    % --- Pilots ---
     params.pilot_power = 2;
-    params.pilot_type = 'random';  % 'random' | 'deterministic'
+    params.pilot_type = 'random';  % pilot values: 'random' (QPSK) | 'deterministic' (all ones)
+    params.pilot_blocks_def = [];  % structured pilot blocks (empty = none)
+    params.n_pilotspertx = 16;     % random pilots per Tx without a block in pilot_blocks_def: scalar or one value per Tx
+
+    % --- Guard interval ---
     params.padType = 'RCP';         % 'CP' | 'RCP' | 'ZP' | 'RZP' | 'NONE'
+    params.padLen = 20;             % guard length (samples), chosen by design; must cover the max delay
 
     % --- System ---
     params.Nt = 4;
@@ -20,74 +27,67 @@ function params = config_params_HF(overrides)
     params.N  = 64;       % Doppler bins (OTFS symbols)
     params.df = 120e3;    % subcarrier spacing (Hz)
     params.c  = 299792458; % exact speed of light in vacuum (m/s)
-
-    % --- Antenna Spacing (in wavelengths) ---
-    params.ddlt = 0.5;
-    params.ddlr = 0.5;
-
+    params.range_factor = 2;  % range/velocity resolution factor: 1 bistatic, 2 monostatic round trip
+    params.ddlt = 0.5;        % Tx antenna spacing (wavelengths)
+    params.ddlr = 0.5;        % Rx antenna spacing (wavelengths)
     params.ModOrder  = 4;
     params.modulation = 'QAM';  % 'QAM' | 'PSK'
 
-    % --- Simulation Loop ---
-    params.SNR_db_list = 20;          % single SNR for debugging; use e.g. -10:5:30 for sweeps
+    % --- Simulation loop ---
+    params.SNR_db_list = 20;          % SNR points [dB]
     params.trials = 1;
-    params.seed = 0;                  % trial t uses rng(seed + t)
+    params.rng_seed_start = 1;        % trial i uses rng(rng_seed_start + i - 1, 'threefry')
     params.n_workers = 6;             % parfor workers when trials > 1; 0 = serial
 
-    % --- Pilot layout ---
-    params.n_private = 16;
-    % params.n_private = [10 10 10 10];    % pilots per Tx antenna (vector, one per Tx)
-    params.pilot_positions = {};     % deterministic mode: cell array of Nx2 [m,n] per Tx
-
-    % --- Target Selection (3 modes, checked in order) ---
-    % Mode 3: deterministic — explicit target definitions (highest priority)
+    % --- Targets: targets (explicit) > n_targets (random) > selected_targets (pool) ---
+    % kappa, epsilon and gain apply to every mode; aoa/delay/doppler_range only to random mode.
+    % Explicit targets, e.g.:
     % params.targets = [struct('angle',20,'delay',5,'doppler',-4.2), ...
     %                   struct('angle',35,'delay',8,'doppler',5.4), ...
     %                   struct('angle',-15,'delay',12,'doppler',3.1), ...
     %                   struct('angle',45,'delay',3,'doppler',-6.0)];
     params.targets = [];
-
-    % Mode 2: random — pick n_targets from pool, optionally override with ranges
-    params.n_targets = [];
-    params.aoa_range = [];            % discrete candidate angles [deg] (list, not an interval), sampled without replacement: n_targets <= numel; [] uses pool
-    params.delay_range = [0 12];      % 0.1-tap grid; scalar max means [1,max], or [lo,hi]; [] uses pool
-    params.doppler_range = [3 6];     % magnitude on 0.1-tap grid, random sign; [] uses pool
-
-    % Mode 1: pool selection (default if modes 3 & 2 inactive)
-    params.selected_targets = [5, 10, 15, 20];
+    params.n_targets = [];    % random: n_targets drawn from the pool; aoa/delay/doppler ranges override
+    params.selected_targets = [5, 10, 15, 20];  % pool indices (targets and n_targets empty)
     params.targets_file = 'targets/pool_5.json';
-
-    % Post-processing (applied on top of any mode)
+    params.doppler_range = [3 6];     % magnitude on the doppler_resolution grid, random sign; [] uses pool
     params.kappa = [];                 % fixed fractional Doppler
+    params.aoa_range = [];            % discrete candidate angles [deg] (list, not an interval), sampled without replacement: n_targets <= numel; [] uses pool
+    params.delay_range = [0 12];      % sampled on the delay_resolution grid; scalar max means [1,max], or [lo,hi]; [] uses pool
     params.epsilon = [];               % fractional delay override; scalar or one value per target in [0,1)
     params.gain = 1;                   % fixed path gain; scalar or one value per target
 
-    % --- SSR stopping ---
-    % [] uses targets_num; a positive integer overrides that limit.
-    % Residual-based stopping can stop earlier.
-    params.ssr.max_J = [];
+    % --- Resolutions: generation rounds angles/delays/Dopplers to these grids; SSR stops at them by default ---
+    params.angle_resolution   = 0.1;   % deg
+    params.delay_resolution   = 0.1;   % taps
+    params.doppler_resolution = 0.1;   % taps
 
-    % --- SSR Grid: search range (+/- from coarse estimate) ---
+    % --- SSR: search half-width (+/- from coarse estimate), stage-1 angle step, min steps ---
     params.ssr.range.a = 5;   % angle
     params.ssr.range.r = 1;   % delay
     params.ssr.range.v = 1;   % Doppler
-
-    % --- SSR Grid: step length ---
+    % Delay/Doppler steps and the stage-2 angle step are the min steps.
     params.ssr.length.a = 1;
-    params.ssr.length.r = 0.1;
-    params.ssr.length.v = 0.1;
+    params.ssr.min_step.a = [];   % [] = angle_resolution
+    params.ssr.min_step.r = [];   % [] = delay_resolution
+    params.ssr.min_step.v = [];   % [] = doppler_resolution
+    % max_J: [] uses targets_num; a positive integer overrides that limit.
+    % Residual-based stopping can stop earlier.
+    params.ssr.max_J = [];
+    params.skip_ssr = false;  % true: skip SSR (err_ssr stays NaN), saves time and memory
 
     % Apply overrides before derived computations
     if nargin > 0 && ~isempty(overrides)
         params = apply_overrides(params, overrides);
     end
 
-    % === Derived quantities ===
+    % === Derived ===
+    % n_meas is deterministic from the layout (positions vary, count doesn't)
+    rng_state = rng;
+    pb = config_pilots(params);
+    rng(rng_state);
+    params.n_meas = compute_n_meas(pb, params.Nr);
 
-    % Sample rate and resolution (padding-independent)
-    params.fsamp       = params.M * params.df;                  % sampling rate (Hz)
-    params.lambda      = params.c / params.fc;                  % wavelength (m)
-    params.range_res   = params.c / (2 * params.M * params.df); % monostatic range resolution (m)
     % Load the target pool only for modes that use it. Explicit targets are
     % self-contained and must not depend on an unrelated pool file.
     if isempty(params.targets)
@@ -103,11 +103,6 @@ function params = config_params_HF(overrides)
     else
         params.pool = [];
     end
-
-    % n_meas is deterministic from n_private (positions vary, count doesn't)
-    n_priv = params.n_private;
-    if isscalar(n_priv), n_priv = repmat(n_priv, 1, params.Nt); end
-    params.n_meas = sum(n_priv) * params.Nr;
 
     % targets_num for pre-allocation
     if ~isempty(params.targets)

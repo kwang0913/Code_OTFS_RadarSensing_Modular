@@ -1,45 +1,67 @@
-function [per_target_err, matched_ests] = compute_pct_errors(chanParams, ests)
-%COMPUTE_PCT_ERRORS Per-target absolute errors (monostatic).
-%   [per_target_err, matched_ests] = compute_pct_errors(chanParams, ests)
+function [per_target_err, matched_ests] = compute_errors(chanParams, ests, params)
+%COMPUTE_ERRORS Per-target absolute errors of estimated vs true parameters.
+%   [per_target_err, matched_ests] = compute_errors(chanParams, ests, params)
 %
-%   Computes per-target absolute errors between true and estimated
-%   channel parameters. For monostatic DFRC, AoA = AoD, so 4 columns.
+%   per_target_err: Kx5 matrix, columns = [angle (AoA), delay, doppler, gain_magnitude, AoD].
+%                   Rows aligned to the K true targets (matched jointly, see below).
+%                   Unmatched (missed or mis-assigned) targets have NaN.
+%                   The gain column is NaN unless both sides carry one gain per
+%                   path (per-Tx gain matrices are not compared); the AoD column
+%                   is NaN unless both sides carry AoDs (monostatic: AoD = AoA).
+%   matched_ests:   Kx5 matrix of estimated values in the same target order
+%                   (gain as magnitude). Unmatched targets have NaN.
 %
-%   per_target_err: Kx4 matrix, columns = [angle, delay, doppler, gain_magnitude].
-%                   Rows aligned to true targets (matched by nearest AoA).
-%                   Unmatched targets have NaN.
-%   matched_ests:   Kx4 matrix of estimated values in the same target order.
-%                   Unmatched targets have NaN.
-%
-%   Greedy matching: each estimate is assigned to the closest unmatched
-%   true target by AoA.
+%   Paths flagged is_los (the known direct path) are excluded on both sides.
+%   Gated greedy matching: a pair is eligible only if |dAoA|, |dDelay|,
+%   |dDoppler| are within params.ssr.range (a, r, v; angle ignored if
+%   params.skip_aoa). Eligible pairs are assigned one-to-one in ascending
+%   order of the sum of squared range-normalised errors.
 
-    n_est  = length(ests.AoAs);
-    n_true = length(chanParams.AoAs);
+    t = 1:numel(chanParams.AoAs);
+    if isfield(chanParams, 'is_los'), t = find(~chanParams.is_los); end
+    e = 1:numel(ests.AoAs);
+    if isfield(ests, 'is_los'), e = find(~ests.is_los); end
+    n_true = numel(t);
+    n_est  = numel(e);
     n_match = min(n_est, n_true);
+    use_aod  = isfield(chanParams, 'AoDs') && isfield(ests, 'AoDs');
+    use_gain = isfield(chanParams, 'pathGains') && isfield(ests, 'pathGains') && ...
+        isvector(chanParams.pathGains) && isvector(ests.pathGains);
 
-    per_target_err = NaN(n_true, 4);
-    matched_ests   = NaN(n_true, 4);
+    per_target_err = NaN(n_true, 5);
+    matched_ests   = NaN(n_true, 5);
 
     if n_est == 0 || n_true == 0, return; end
 
-    dist = abs(chanParams.AoAs(:) - ests.AoAs(:).');
+    rg = params.ssr.range;
+    col = @(x, i) reshape(x(i), [], 1);  row = @(x, i) reshape(x(i), 1, []);
+    da = abs(col(chanParams.AoAs, t) - row(ests.AoAs, e)) / rg.a;
+    dr = abs(col(chanParams.pathDelays, t) - row(ests.pathDelays, e)) / rg.r;
+    dv = abs(col(chanParams.pathDopplers, t) - row(ests.pathDopplers, e)) / rg.v;
+    if isfield(params, 'skip_aoa') && params.skip_aoa, da(:) = 0; end
+    dist = da.^2 + dr.^2 + dv.^2;
+    dist(da > 1 | dr > 1 | dv > 1) = Inf;  % outside gate
     [~, order] = sort(dist(:));
     used_true = false(1, n_true);
     used_est  = false(1, n_est);
     for ii = 1:length(order)
         [ti, ei] = ind2sub([n_true, n_est], order(ii));
+        if isinf(dist(ti, ei)), break; end  % remaining pairs outside gate
         if used_true(ti) || used_est(ei), continue; end
         used_true(ti) = true;
         used_est(ei)  = true;
-        per_target_err(ti, :) = [ ...
-            abs(chanParams.AoAs(ti) - ests.AoAs(ei)), ...
-            abs(chanParams.pathDelays(ti) - ests.pathDelays(ei)), ...
-            abs(chanParams.pathDopplers(ti) - ests.pathDopplers(ei)), ...
-            abs(abs(chanParams.pathGains(ti)) - abs(ests.pathGains(ei)))];
-        matched_ests(ti, :) = [ ...
-            ests.AoAs(ei), ests.pathDelays(ei), ...
-            ests.pathDopplers(ei), abs(ests.pathGains(ei))];
+        T = t(ti);  E = e(ei);
+        matched_ests(ti, 1:3) = [ests.AoAs(E), ests.pathDelays(E), ests.pathDopplers(E)];
+        per_target_err(ti, 1:3) = abs(matched_ests(ti, 1:3) - ...
+            [chanParams.AoAs(T), chanParams.pathDelays(T), chanParams.pathDopplers(T)]);
+        if use_gain
+            matched_ests(ti, 4) = abs(ests.pathGains(E));
+            per_target_err(ti, 4) = abs(matched_ests(ti, 4) - abs(chanParams.pathGains(T)));
+        end
+        if use_aod
+            matched_ests(ti, 5) = ests.AoDs(E);
+            per_target_err(ti, 5) = abs(matched_ests(ti, 5) - chanParams.AoDs(T));
+        end
         if sum(used_true) >= n_match, break; end
     end
 end

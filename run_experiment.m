@@ -5,7 +5,7 @@ function run_experiment(json_file)
 %
 %   JSON format:
 %     {
-%       "overrides": { "pilot_power": 10, "trials": 50, "seed": 2 },
+%       "overrides": { "pilot_power": 10, "trials": 50, "rng_seed_start": 2 },
 %       "sweep":     [ {"pilot_power": 1}, {"pilot_power": 5} ]
 %     }
 %
@@ -48,7 +48,7 @@ function run_experiment(json_file)
             run_overrides = base_overrides;
         end
 
-        params = config_params_HF(run_overrides);
+        params = config_params_std(run_overrides);
 
         fprintf('\n--- Run %d/%d ---\n', run_idx, n_runs);
         override_fields = fieldnames(run_overrides);
@@ -58,7 +58,7 @@ function run_experiment(json_file)
             if isnumeric(val) && isscalar(val)
                 fprintf('  %s = %g\n', key, val);
             elseif isnumeric(val)
-                fprintf('  %s = [%s]\n', key, num2str(val));
+                fprintf('  %s = %s\n', key, mat2str(val(:).'));
             elseif ischar(val) || isstring(val)
                 fprintf('  %s = %s\n', key, val);
             end

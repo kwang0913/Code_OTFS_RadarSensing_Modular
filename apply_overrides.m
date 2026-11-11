@@ -1,13 +1,20 @@
-function base = apply_overrides(base, overrides)
-%APPLY_OVERRIDES Recursively merge override fields into base struct.
-    if isempty(overrides), return; end
+function params = apply_overrides(params, overrides)
+%APPLY_OVERRIDES Recursively merge override fields into a params struct.
+%   Nested structs are merged field-by-field (not replaced wholesale).
+%
+%   Example:
+%       params = apply_overrides(params, struct('ssr', struct('range', struct('a', 0.3))))
+%       % Only params.ssr.range.a is changed; other ssr fields are preserved.
+
     fields = fieldnames(overrides);
     for i = 1:numel(fields)
-        f = fields{i};
-        if isstruct(overrides.(f)) && isfield(base, f) && isstruct(base.(f))
-            base.(f) = apply_overrides(base.(f), overrides.(f));
+        key = fields{i};
+        val = overrides.(key);
+        if isstruct(val) && isfield(params, key) && isstruct(params.(key))
+            % Recurse into nested structs
+            params.(key) = apply_overrides(params.(key), val);
         else
-            base.(f) = overrides.(f);
+            params.(key) = val;
         end
     end
 end

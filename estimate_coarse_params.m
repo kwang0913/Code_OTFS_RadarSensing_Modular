@@ -1,8 +1,8 @@
-function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams, n0)
+function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams, n0, derivedParams)
 %ESTIMATE_COARSE_PARAMS Coarse DFRC parameter estimation for monostatic radar.
 %   Stage 1: SIC AoA detection
-%   Stage 2: MMSE beamforming + xcorr2 in DD domain for delay-Doppler
-%   Stage 3: LS path gains
+%   Stage 2: MMSE beamforming + FFT circular xcorr in DD domain for delay-Doppler
+%   Stage 3: ridge LS path gains, model y = c*Phi*gains + noise (pilot_noise_model)
 
     M  = params.M;
     N  = params.N;
@@ -129,10 +129,10 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     end
 
     %% -------------------------------------------------------------------
-    %  Stage 2: xcorr2 for delay-Doppler (with beamforming when Nr > 1)
+    %  Stage 2: FFT circular xcorr for delay-Doppler (with beamforming when Nr > 1)
     % --------------------------------------------------------------------
     xcorr2_thresh = 0.1;  % fraction of per-bin peak max for local maxima detection
-    doppler_taps  = -(N-1):(N-1);  % xcorr2 lags; lags v and v-N alias (DD is periodic in Doppler)
+    doppler_taps  = 0:N-1;  % circular Doppler lags; wrapN maps to (-N/2, N/2]
     wrapN = @(v) N/2 - mod(N/2 - v, N);  % principal interval (-N/2, N/2]
     n_ang = length(ang);
     XDD_flat = reshape(permute(XDD, [3,1,2]), Nt, []);  % Nt x (M*N)
@@ -157,7 +157,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
         end
     end
 
-    % xcorr2 per angle with local maxima detection
+    % Circular xcorr per angle with local maxima detection
     all_angles    = [];
     all_delays    = [];
     all_dopplers  = [];
@@ -167,23 +167,19 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
         Y_bf  = squeeze(ADD(p, :, :));
         X_ref = squeeze(XDD_ref(p, :, :));
 
-        Hdd = xcorr2(Y_bf, X_ref);
-        Hdd_pos = abs(Hdd(M:end, :));
+        Hdd_pos = abs(ifft2(fft2(Y_bf) .* conj(fft2(X_ref))));  % M x N circular xcorr: row r -> delay r-1, col c -> Doppler lag c-1
 
         peak_max = max(Hdd_pos(:));
         if peak_max == 0, continue; end
 
         thresh = xcorr2_thresh * peak_max;
-        [nR, nC] = size(Hdd_pos);
 
-        % Local maxima: >= all 8 neighbors and above threshold
-        Hpad = zeros(nR+2, nC+2);
-        Hpad(2:end-1, 2:end-1) = Hdd_pos;
-        is_peak = true(nR, nC);
+        % Local maxima: >= all 8 circular neighbors and above threshold
+        is_peak = true(size(Hdd_pos));
         for dr = -1:1
             for dc = -1:1
                 if dr == 0 && dc == 0, continue; end
-                is_peak = is_peak & (Hdd_pos >= Hpad((2:end-1)+dr, (2:end-1)+dc));
+                is_peak = is_peak & (Hdd_pos >= circshift(Hdd_pos, [dr dc]));
             end
         end
         is_peak = is_peak & (Hdd_pos >= thresh);
@@ -201,8 +197,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     if isempty(all_delays) && n_ang > 0
         Y_bf  = squeeze(ADD(1, :, :));
         X_ref = squeeze(XDD_ref(1, :, :));
-        Hdd = xcorr2(Y_bf, X_ref);
-        Hdd_pos = abs(Hdd(M:end, :));
+        Hdd_pos = abs(ifft2(fft2(Y_bf) .* conj(fft2(X_ref))));
         [~, pk_lin] = max(Hdd_pos(:));
         [row_pk, col_pk] = ind2sub(size(Hdd_pos), pk_lin);
         all_angles    = ang(1);
@@ -211,7 +206,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
         all_peak_vals = Hdd_pos(row_pk, col_pk);
     end
 
-    % --- Deduplicate: for shared (delay, Doppler) peaks at close angles (incl. wrapped Doppler aliases), keep strongest ---
+    % --- Deduplicate: for shared (delay, Doppler) peaks at close angles, keep strongest ---
     % Only treat as leakage if angles are within ~1 beamwidth
     beamwidth_deg = asind(1 / (Nr * params.ddlr));  % ULA 3dB beamwidth ≈ asin(1/(Nr·d/λ))
     ang_dedup_thresh = beamwidth_deg;
@@ -260,15 +255,13 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
             [~, bf_idx] = min(abs(detected_angles - ang_val));
             Y_bf_p  = squeeze(ADD(bf_idx, :, :));
             X_ref_p = squeeze(XDD_ref(bf_idx, :, :));
-            Hdd_p = xcorr2(Y_bf_p, X_ref_p);
-
-            Hdd_pos_plot = abs(Hdd_p(M:end, :));
+            Hdd_pos_plot = abs(ifft2(fft2(Y_bf_p) .* conj(fft2(X_ref_p))));
             Hdd_pos_plot = Hdd_pos_plot / max(Hdd_pos_plot(:));
 
             delay_axis = 0:(M-1);
 
             figure;
-            mesh(doppler_taps, delay_axis, Hdd_pos_plot, 'EdgeColor', 'interp', 'FaceColor', 'interp');
+            mesh(-N/2:N/2-1, delay_axis, fftshift(Hdd_pos_plot, 2), 'EdgeColor', 'interp', 'FaceColor', 'interp');
             hold on;
             for tidx = 1:length(chanParams.AoAs)
                 [~, nearest_bin] = min(abs(unique_ang - chanParams.AoAs(tidx)));
@@ -279,14 +272,11 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
                 end
             end
             % Find all local maxima above threshold on this surface
-            [nR_p, nC_p] = size(Hdd_pos_plot);
-            Hpad_p = zeros(nR_p+2, nC_p+2);
-            Hpad_p(2:end-1, 2:end-1) = Hdd_pos_plot;
-            is_pk = true(nR_p, nC_p);
+            is_pk = true(size(Hdd_pos_plot));
             for dr = -1:1
                 for dc = -1:1
                     if dr == 0 && dc == 0, continue; end
-                    is_pk = is_pk & (Hdd_pos_plot >= Hpad_p((2:end-1)+dr, (2:end-1)+dc));
+                    is_pk = is_pk & (Hdd_pos_plot >= circshift(Hdd_pos_plot, [dr dc]));
                 end
             end
             is_pk = is_pk & (Hdd_pos_plot >= xcorr2_thresh);
@@ -322,20 +312,23 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     end
 
     %% -------------------------------------------------------------------
-    %  Stage 3: LS path gains
+    %  Stage 3: ridge LS path gains (c*Phi, ridge s2)
     % --------------------------------------------------------------------
     coarse_for_phi.AoAs         = ang;
+    coarse_for_phi.AoDs         = ang;  % monostatic
     coarse_for_phi.pathDelays   = pathDelays;
     coarse_for_phi.pathDopplers = pathDopplers;
 
-    Phi = build_response_matrix(coarse_for_phi, params);
+    [c, s2] = pilot_noise_model(XTF, params, n0);
+    Phi = c * build_response_matrix(coarse_for_phi, params, derivedParams);  % y = c*Phi*gains + noise(s2)
     y   = build_measurement_vector(YTF, XTF, params.pilot_blocks, Nr, n0);
-    pathGains = (Phi' * Phi + n0 * eye(n_detected)) \ (Phi' * y);
+    pathGains = (Phi' * Phi + s2 * eye(n_detected)) \ (Phi' * y);
 
     %% -------------------------------------------------------------------
     %  Output
     % --------------------------------------------------------------------
     coarse.AoAs         = ang;
+    coarse.AoDs         = ang;  % monostatic
     coarse.pathDelays   = pathDelays;
     coarse.pathDopplers = pathDopplers;
     coarse.pathGains    = pathGains;

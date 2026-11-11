@@ -5,13 +5,16 @@ function chanParams = generate_channel_params(params)
 %     Mode 2 (random):        params.n_targets + aoa/delay/doppler ranges
 %     Mode 1 (pool):          params.selected_targets from params.pool
 %   epsilon, kappa, and gain are applied as post-processing on any mode.
-%   Path gains are random complex Rayleigh unless params.gain is set.
+%   Angles, delays and Dopplers are rounded to params.angle/delay/doppler_resolution
+%   (before the epsilon/kappa overrides, which stay exact).
+%   Monostatic: AoDs = AoAs. The guard length is fixed by params.padLen; the
+%   largest delay must fit in it.
+%
+%   RNG draw order: targets (selection, angles, delays) -> gains -> Dopplers
+%   (magnitude, sign); pilot positions, data, guards, pilot values and noise follow.
 
-    c = params.c;
-    lambda = params.lambda;
-    fsamp = params.fsamp;
-
-    %% Target selection
+    %% Target selection (angles, delays)
+    draw_doppler = false;
     if ~isempty(params.targets)
         % --- Mode 3: deterministic ---
         angles   = [params.targets.angle];
@@ -35,13 +38,9 @@ function chanParams = generate_channel_params(params)
             angles = params.aoa_range(sel_aoa);
         end
         if ~isempty(params.delay_range)
-            delays = sample_tap_range(params.delay_range, K, 1, 'delay_range');
+            delays = sample_tap_range(params.delay_range, K, 1, 'delay_range', params.delay_resolution);
         end
-        if ~isempty(params.doppler_range)
-            dop_mag = sample_tap_range(params.doppler_range, K, 0, 'doppler_range');
-            dop_sign = 2*randi([0,1], 1, K) - 1;
-            dopplers = dop_mag .* dop_sign;
-        end
+        draw_doppler = ~isempty(params.doppler_range);  % drawn after the gains
 
     else
         % --- Mode 1: pool selection ---
@@ -51,9 +50,10 @@ function chanParams = generate_channel_params(params)
         dopplers = [target_list.doppler];
         K = numel(params.selected_targets);
     end
+    angles = snap(angles, params.angle_resolution);
+    delays = snap(reshape(delays, 1, []), params.delay_resolution);
 
     %% Post-processing: override fractional delay part (for controlled experiments)
-    delays = reshape(delays, 1, []);
     if ~isempty(params.epsilon)
         epsilon = reshape(params.epsilon, 1, []);
         if (~isscalar(epsilon) && numel(epsilon) ~= K) || ...
@@ -65,10 +65,9 @@ function chanParams = generate_channel_params(params)
     if ~isreal(delays) || any(~isfinite(delays) | delays < 0 | delays >= params.M)
         error('Target delays must be finite and in [0,M).');
     end
-
-    %% Post-processing: override fractional Doppler part (for controlled experiments)
-    if ~isempty(params.kappa)
-        dopplers = floor(dopplers) + params.kappa;
+    if ceil(max(delays)) > params.padLen
+        error('generate_channel_params:padLen', ...
+            'ceil(max delay) = %d exceeds params.padLen = %d.', ceil(max(delays)), params.padLen);
     end
 
     %% Path gains
@@ -83,42 +82,51 @@ function chanParams = generate_channel_params(params)
                 'params.gain must be scalar or have one entry per target.');
         end
     else
-        gains = sqrt(1/2) * (randn(1, K) + 1j * randn(1, K));
+        gains = sqrt(1/2) * (randn(1, K) + 1j * randn(1, K));  % complex Rayleigh
+        % gains = exp(1j*2*pi*rand(1, K));                     % unit modulus, random phase
+    end
+
+    %% Dopplers (random range: magnitude, then sign)
+    if draw_doppler
+        dop_mag = sample_tap_range(params.doppler_range, K, 0, 'doppler_range', params.doppler_resolution);
+        dop_sign = 2*randi([0,1], 1, K) - 1;
+        dopplers = dop_mag .* dop_sign;
+    end
+    dopplers = snap(dopplers, params.doppler_resolution);
+
+    %% Post-processing: override fractional Doppler part (for controlled experiments)
+    if ~isempty(params.kappa)
+        dopplers = floor(dopplers) + params.kappa;
     end
 
     %% Assemble chanParams
     chanParams.AoAs         = angles;
+    chanParams.AoDs         = angles;  % monostatic
     chanParams.pathDelays   = delays;
     chanParams.pathDopplers = dopplers;
     chanParams.pathGains    = gains;
 
-    %% Derived quantities
-    chanParams.padLen = ceil(max(delays));
-    [chanParams.Meff, chanParams.numSamps, chanParams.offset] = ...
-        compute_padding_params(params.M, params.N, chanParams.padLen, params.padType);
-    chanParams.fsamp = fsamp;
-    chanParams.Tsamp = chanParams.Meff / fsamp;
-
-    chanParams.ranges           = delays * c / (2 * fsamp);
-    chanParams.pathDopplerFreqs = dopplers / (params.N * chanParams.Tsamp);
-    chanParams.velocities       = chanParams.pathDopplerFreqs * lambda / 2;
-
     %% Verbose: print ground truth
     if isfield(params, 'verbose_output') && params.verbose_output
+        derivedParams = compute_derived_params(params);
         fprintf('--- Ground Truth ---\n');
         fprintf('  Angles:     %s deg\n', sprintf('%.1f  ', angles));
         fprintf('  Delays:     %s taps\n', sprintf('%.6g  ', delays));
         fprintf('  Dopplers:   %s taps\n', sprintf('%.2f  ', dopplers));
-        fprintf('  Ranges:     %s m\n', sprintf('%.1f  ', chanParams.ranges));
-        fprintf('  Velocities: %s m/s\n', sprintf('%.1f  ', chanParams.velocities));
-        g = gains;
-        fprintf('  PathGains:  %s\n', sprintf('%.1f  ', abs(g)));
+        fprintf('  Ranges:     %s m\n', sprintf('%.1f  ', delays * params.c / (2 * derivedParams.fsamp)));
+        fprintf('  Velocities: %s m/s\n', sprintf('%.1f  ', dopplers / derivedParams.Tsamp * derivedParams.lambda / 2));
+        fprintf('  PathGains:  %s\n', sprintf('%.1f  ', abs(gains)));
         fprintf('--------------------\n');
     end
 end
 
-function taps = sample_tap_range(bounds, count, scalar_min, field)
-% Draw uniformly from the 0.1-tap grid inside the requested bounds.
+function x = snap(x, res)
+% Round to the resolution grid (12-digit rounding removes multiplication noise).
+    x = round(round(x / res) * res, 12);
+end
+
+function taps = sample_tap_range(bounds, count, scalar_min, field, res)
+% Draw uniformly from the res-spaced grid inside the requested bounds.
     bounds = reshape(bounds, 1, []);
     if isscalar(bounds)
         bounds = [scalar_min, bounds];
@@ -127,12 +135,12 @@ function taps = sample_tap_range(bounds, count, scalar_min, field)
             any(~isfinite(bounds) | bounds < 0) || bounds(1) > bounds(2)
         error('%s must specify a nonnegative [min,max] range.', field);
     end
-    ticks = round(double(bounds) * 10, 12);
+    ticks = round(double(bounds) / res, 12);
     first = ceil(ticks(1));
     last = floor(ticks(2));
     if first > last
         error('generate_channel_params:emptyTapGrid', ...
-            '%s contains no point on the 0.1-tap grid.', field);
+            '%s contains no point on the %g-tap grid.', field, res);
     end
-    taps = randi([first, last], 1, count) / 10;
+    taps = round(randi([first, last], 1, count) * res, 12);
 end

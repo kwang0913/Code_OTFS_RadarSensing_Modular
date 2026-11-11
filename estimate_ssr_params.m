@@ -1,8 +1,11 @@
-function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, n0)
+function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, n0, derivedParams)
 %ESTIMATE_SSR_PARAMS Direct OMP on fine dictionary for monostatic DFRC.
-%   Builds a fine (angle, delay, Doppler) dictionary from coarse candidate
-%   neighborhoods, then runs OMP with residual-reduction threshold stopping.
-%   No binary refinement — single-stage, grid-independent.
+%   Stage 1: fine (angle, delay, Doppler) dictionary from coarse candidate
+%   neighborhoods (angle step ssr.length.a, delay/Doppler steps at the min
+%   steps), OMP with residual-reduction threshold stopping.
+%   Stage 2: angle of each selected path refined within +-ssr.length.a at the
+%   angle min step (delay/Doppler held), then gains refit.
+%   Gains use the pilot model y = c*Phi*gains + noise (pilot_noise_model).
 %   params.ssr.max_J optionally caps the number of recovered scatterers.
 
     K  = length(coarse.AoAs);
@@ -23,11 +26,13 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
 
     n_meas = compute_n_meas(pilot_blocks, Nr);
     y = build_measurement_vector(YTF, XTF, pilot_blocks, Nr, n0);
+    [c, s2] = pilot_noise_model(XTF, params, n0);  % y = c*Phi*gains + noise(s2)
 
     % --- Fine grid config ---
-    step_a = params.ssr.length.a;  % angle step (degrees)
-    step_r = params.ssr.length.r;  % delay step (taps)
-    step_v = params.ssr.length.v;  % Doppler step (taps)
+    min_step = ssr_min_steps(params);
+    step_a = params.ssr.length.a;  % stage-1 angle step (degrees)
+    step_r = min_step.r;           % delay step (taps)
+    step_v = min_step.v;           % Doppler step (taps)
     steps = [step_a, step_r, step_v];
     if numel(steps) ~= 3 || ~isreal(steps) || any(~isfinite(steps) | steps <= 0)
         error('SSR grid steps must be positive finite scalars.');
@@ -69,8 +74,11 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
         fprintf('  SSR dictionary: %d atoms from %d coarse candidates\n', n_dict, K);
     end
 
-    % Build dictionary matrix: vectorize over (delay, Doppler) per angle
+    % Build dictionary matrix: vectorize over (delay, Doppler) per angle.
+    % Each angle is built in a small local block and written with ONE full-height assignment:
+    % per-site row-block writes into scattered columns of the large matrix were pathologically slow.
     Phi_dict = zeros(n_meas, n_dict);
+    sites = pilot_sites(pilot_blocks);
     unique_angles = unique(dict_a);
 
     for ai = 1:length(unique_angles)
@@ -83,24 +91,16 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
         a_steer = exp(1j*2*pi*params.ddlr*(0:Nr-1).'*sind(theta));
 
         nu_all = local_v(:);
-        k_all  = floor(nu_all);
-        kappa_all = nu_all - k_all;
 
-        idx = 0;
-        for b = 1:length(pilot_blocks)
-            blk = pilot_blocks(b);
-            d_tx = exp(-1j*2*pi*params.ddlt*(blk.tx-1)*sind(theta));
+        Phi_blk = zeros(n_meas, numel(col_idx));
+        for s = 1:sites.n_sites
+            d_tx = exp(-1j*2*pi*params.ddlt*(sites.tx(s)-1)*sind(theta));
 
-            for pp = 1:blk.n_pilots
-                m0 = blk.m(pp) - 1;
-                n0_pos = blk.n(pp) - 1;
-
-                % Compute xi_H for each atom individually (paired mode)
-                xi_vals = compute_xi_H(nu_all, k_all, kappa_all, local_r(:), n0_pos, m0, N, M);
-                Phi_dict(idx+(1:Nr), col_idx) = (a_steer * d_tx) * xi_vals.';
-                idx = idx + Nr;
-            end
+            % xi_H for each atom (delay and Doppler paired elementwise)
+            xi_vals = compute_xi_H(nu_all, local_r(:), sites.n(s)-1, sites.m(s)-1, N, M, derivedParams, params.padType);
+            Phi_blk((s-1)*Nr+(1:Nr), :) = (a_steer * d_tx) * xi_vals.';
         end
+        Phi_dict(:, col_idx) = c * Phi_blk;
     end
 
     %% --- OMP with residual-reduction threshold ---
@@ -124,7 +124,7 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
 
         % Joint LS for active set
         Phi_active = Phi_dict(:, active);
-        gains_active = (Phi_active' * Phi_active + n0 * eye(length(active))) \ (Phi_active' * y);
+        gains_active = (Phi_active' * Phi_active + s2 * eye(length(active))) \ (Phi_active' * y);
         r = y - Phi_active * gains_active;
 
         cur_res = real(r' * r);
@@ -145,14 +145,33 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
         prev_res = cur_res;
     end
 
+    %% --- Stage 2: refine each selected angle within +-step_a at min_step.a ---
+    % Delay/Doppler held from stage 1; one pass, each path against the others' fit.
+    sel_a = dict_a(active);  sel_r = dict_r(active);  sel_v = dict_v(active);
+    n_ref = round(step_a / min_step.a);
+    if ~params.skip_aoa && min_step.a < step_a  % stage 2 only if strictly finer than stage 1
+        n_sel = length(active);
+        for i = 1:n_sel
+            others = [1:i-1, i+1:n_sel];
+            Phi_sel = atoms(sel_a, sel_r, sel_v, c, params, derivedParams);
+            g = (Phi_sel' * Phi_sel + s2 * eye(n_sel)) \ (Phi_sel' * y);
+            r_i = y - Phi_sel(:, others) * reshape(g(others), [], 1);  % reshape: n_sel = 1 gives a 0x1 empty
+            cand_a = round(sel_a(i) + (-n_ref:n_ref) * min_step.a, 12);
+            Phi_c = atoms(cand_a, repmat(sel_r(i), size(cand_a)), repmat(sel_v(i), size(cand_a)), c, params, derivedParams);
+            [~, best_c] = max(abs(Phi_c' * r_i) ./ vecnorm(Phi_c)');
+            sel_a(i) = cand_a(best_c);
+        end
+    end
+
     %% --- Package output ---
-    Phi_active = Phi_dict(:, active);
-    gains_active = (Phi_active' * Phi_active + n0 * eye(length(active))) \ (Phi_active' * y);
+    Phi_active = atoms(sel_a, sel_r, sel_v, c, params, derivedParams);
+    gains_active = (Phi_active' * Phi_active + s2 * eye(length(active))) \ (Phi_active' * y);
     r = y - Phi_active * gains_active;
 
-    final_ests.AoAs         = dict_a(active);
-    final_ests.pathDelays   = dict_r(active);
-    final_ests.pathDopplers = dict_v(active);
+    final_ests.AoAs         = sel_a;
+    final_ests.AoDs         = sel_a;  % monostatic
+    final_ests.pathDelays   = sel_r;
+    final_ests.pathDopplers = sel_v;
     final_ests.pathGains    = gains_active;
     final_ests.residual_nmse = real(r' * r) / real(y' * y);
 
@@ -190,4 +209,10 @@ function final_ests = estimate_ssr_params(YTF, XTF, coarse, params, chanParams, 
             legend('Location', 'best');
         end
     end
+end
+
+function Phi = atoms(angles, delays, dopplers, c, params, derivedParams)
+%ATOMS Scaled response columns c*Phi for the given (angle, delay, Doppler) triples (monostatic).
+    ests = struct('AoAs', angles, 'AoDs', angles, 'pathDelays', delays, 'pathDopplers', dopplers);
+    Phi = c * build_response_matrix(ests, params, derivedParams);
 end

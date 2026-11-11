@@ -5,13 +5,13 @@ function plot_results(results)
 %   from P_d; results without a `failed` field are assumed to have none.
 
     params = results.params;
-    K = size(results.pct_err_coarse, 3);
+    K = size(results.err_coarse, 3);
     snr = results.SNR_db_list;
 
     if isfield(results, 'failed')
         failed = results.failed;
     else
-        failed = false(size(results.n_detected));
+        failed = false(size(results.n_detected_coarse));
     end
 
     all_param_labels = {'Angle [deg]', 'Delay [taps]', 'Doppler'};
@@ -26,8 +26,8 @@ function plot_results(results)
     for si = 1:length(mse_dims)
         p = mse_dims(si);
         subplot(1, length(mse_dims), si);
-        mse_coarse = squeeze(mean(mean(results.pct_err_coarse(:, :, :, p).^2, 1, 'omitnan'), 3, 'omitnan'));
-        mse_ssr    = squeeze(mean(mean(results.pct_err_ssr(:, :, :, p).^2, 1, 'omitnan'), 3, 'omitnan'));
+        mse_coarse = squeeze(mean(mean(results.err_coarse(:, :, :, p).^2, 1, 'omitnan'), 3, 'omitnan'));
+        mse_ssr    = squeeze(mean(mean(results.err_ssr(:, :, :, p).^2, 1, 'omitnan'), 3, 'omitnan'));
         semilogy(snr, mse_coarse, '-o', 'LineWidth', 2); hold on;
         semilogy(snr, mse_ssr, '-s', 'LineWidth', 2);
         grid on;
@@ -50,8 +50,8 @@ function plot_results(results)
         pd_label = sprintf('Detection Probability (angle tol = %d°)', tol);
         pd_table_label = sprintf('--- Detection Probability (angle error < %d°) ---', tol);
     end
-    coarse_err = results.pct_err_coarse(:, :, :, dim);
-    ssr_err    = results.pct_err_ssr(:, :, :, dim);
+    coarse_err = results.err_coarse(:, :, :, dim);
+    ssr_err    = results.err_ssr(:, :, :, dim);
     coarse_detected = double(coarse_err < tol);  % NaN error -> not detected
     ssr_detected    = double(ssr_err < tol);
     coarse_detected(repmat(failed, 1, 1, K)) = NaN;  % failed trials are missing

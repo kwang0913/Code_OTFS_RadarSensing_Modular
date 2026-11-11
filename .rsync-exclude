@@ -1,0 +1,8 @@
+.git/
+.codegraph/
+results/
+Figures/
+Temp/
+*.mat
+*.asv
+.rsync-exclude

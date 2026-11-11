@@ -34,3 +34,6 @@ Thumbs.db
 # Experimental variants (kept on disk, untracked)
 run_sim_new.m
 estimate_coarse_params_new.m
+
+experiments/
+slurm_logs/

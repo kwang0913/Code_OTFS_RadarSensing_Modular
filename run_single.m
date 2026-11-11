@@ -2,10 +2,10 @@
 % Main entry script. Runs one simulation, displays results and plots.
 
 close all;
-clear all;
+clearvars;
 
 % --- Simulation Control ---
-params = config_params_HF();
+params = config_params_std();
 
 % --- Run Simulation ---
 results = run_sim(params);

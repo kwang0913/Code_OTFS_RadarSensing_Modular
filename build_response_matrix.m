@@ -1,37 +1,27 @@
-function Phi = build_response_matrix(ests, params)
-%BUILD_RESPONSE_MATRIX Channel dictionary using xi_j*H^j[n,m] with real delay and Doppler.
-%   Monostatic DFRC: Tx steering uses ests.AoAs.
+function Phi_est = build_response_matrix(final_ests, params, derivedParams)
+%BUILD_RESPONSE_MATRIX Same-bin pilot dictionary with physical receive-time gains.
+%   Rows follow build_measurement_vector: Nr rows per unique pilot/reference
+%   TF site (pilot_sites order).
 
-    pilot_blocks = params.pilot_blocks;
+    sites = pilot_sites(params.pilot_blocks);
     Nr = params.Nr;
     M = params.M;
     N = params.N;
-    K = length(ests.AoAs);
+    K = length(final_ests.AoAs);
 
-    n_meas = compute_n_meas(pilot_blocks, Nr);
-
-    Phi = zeros(n_meas, K);
+    Phi_est = zeros(sites.n_sites*Nr, K);
 
     % AoA steering: Nr x K
-    a_steer = exp(1j*2*pi*params.ddlr*(0:Nr-1).'*sind(ests.AoAs(:)'));
+    a_steer = exp(1j*2*pi*params.ddlr*(0:Nr-1).'*sind(final_ests.AoAs(:)'));
 
-    nu_arr    = ests.pathDopplers(:)';
-    k_arr     = floor(nu_arr);       % integer Doppler index
-    kappa_arr = nu_arr - k_arr;      % fractional Doppler remainder in [0,1)
-    l_arr     = ests.pathDelays(:)';
+    nu_arr    = final_ests.pathDopplers(:)';
+    % Fractional delay and Doppler remain unquantized.
+    l_arr     = final_ests.pathDelays(:)';
 
-    idx = 0;
-    for b = 1:length(pilot_blocks)
-        blk = pilot_blocks(b);
-
-        d_pilot = exp(-1j*2*pi*params.ddlt*(blk.tx - 1)*sind(ests.AoAs(:)'));
-
-        for p = 1:blk.n_pilots
-            m0 = blk.m(p) - 1;
-            n0 = blk.n(p) - 1;
-            xi_H_p = compute_xi_H(nu_arr, k_arr, kappa_arr, l_arr, n0, m0, N, M);
-            Phi(idx+(1:Nr), :) = a_steer .* d_pilot .* xi_H_p;
-            idx = idx + Nr;
-        end
+    for s = 1:sites.n_sites
+        % AoD steering for the transmit antenna carrying this site
+        d_site = exp(-1j*2*pi*params.ddlt*(sites.tx(s) - 1)*sind(final_ests.AoDs(:)'));
+        xi_H = compute_xi_H(nu_arr, l_arr, sites.n(s)-1, sites.m(s)-1, N, M, derivedParams, params.padType);
+        Phi_est((s-1)*Nr+(1:Nr), :) = a_steer .* d_site .* xi_H;
     end
 end
