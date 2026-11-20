@@ -7,7 +7,7 @@ function params = config_params_HF(overrides)
     % --- Control ---
     params.show_figures = true;
     params.verbose_output = true;
-    params.coarse_method = 'xcorr';     % 'xcorr' (estimate_coarse_params) | 'fused' (estimate_coarse_params_fused, needs delay and doppler blocks in pilot_blocks_def)
+    params.coarse_method = 'xcorr';     % 'xcorr' (estimate_coarse_params) | 'xcorr_new' (estimate_coarse_params_xcorr_new, joint virtual-array angle) | 'fused' (estimate_coarse_params_fused, needs delay and doppler blocks in pilot_blocks_def)
 
     % --- Pilots ---
     params.pilot_power = 2;

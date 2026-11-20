@@ -7,7 +7,7 @@ function params = config_params_std(overrides)
     % --- Control ---
     params.show_figures = false;
     params.verbose_output = false;
-    params.coarse_method = 'xcorr';     % 'xcorr' (estimate_coarse_params) | 'fused' (estimate_coarse_params_fused, needs delay and doppler blocks in pilot_blocks_def)
+    params.coarse_method = 'xcorr_new';     % 'xcorr' (estimate_coarse_params) | 'xcorr_new' (estimate_coarse_params_xcorr_new, joint virtual-array angle) | 'fused' (estimate_coarse_params_fused, needs delay and doppler blocks in pilot_blocks_def)
 
     % --- Pilots ---
     params.pilot_power = 2;
@@ -37,29 +37,29 @@ function params = config_params_std(overrides)
     params.SNR_db_list = -10:5:30;          % SNR points [dB]
     params.trials = 500;
     params.rng_seed_start = 1;        % trial i uses rng(rng_seed_start + i - 1, 'threefry')
-    params.n_workers = 6;             % parfor workers when trials > 1; 0 = serial
+    params.n_workers = 2;             % parfor workers when trials > 1; 0 = serial
 
     % --- Targets: targets (explicit) > n_targets (random) > selected_targets (pool) ---
     % kappa, epsilon and gain apply to every mode; aoa/delay/doppler_range only to random mode.
     % Explicit targets, e.g.:
-    % params.targets = [struct('angle',20,'delay',5,'doppler',-4.2), ...
+    % params.targets = [struct('angle',-20,'delay',5,'doppler',-4.2), ...
     %                   struct('angle',35,'delay',8,'doppler',5.4), ...
-    %                   struct('angle',-15,'delay',12,'doppler',3.1), ...
-    %                   struct('angle',45,'delay',3,'doppler',-6.0)];
+    %                   struct('angle',-21,'delay',12,'doppler',3.1), ...
+    %                   struct('angle',45,'delay',10,'doppler',-6.0)];
     params.targets = [];
     params.n_targets = [4];   % random: n_targets drawn from the pool; aoa/delay/doppler ranges override
     params.selected_targets = [5, 10, 15, 20];  % pool indices (targets and n_targets empty)
     params.targets_file = 'targets/pool_5.json';
     params.doppler_range = [3 6];     % magnitude on the doppler_resolution grid, random sign; [] uses pool
     params.kappa = [];                 % fixed fractional Doppler
-    params.aoa_range = [-60:8:60];            % discrete candidate angles [deg] (list, not an interval), sampled without replacement: n_targets <= numel; [] uses pool
+    params.aoa_range = [-60:0.1:60];            % discrete candidate angles [deg] (list, not an interval), sampled without replacement: n_targets <= numel; [] uses pool
     params.delay_range = [7 12];      % sampled on the delay_resolution grid; scalar max means [1,max], or [lo,hi]; [] uses pool
     params.epsilon = [];               % fractional delay override; scalar or one value per target in [0,1)
     params.gain = [];                   % fixed path gain; scalar or one value per target
 
     % --- Resolutions: generation rounds angles/delays/Dopplers to these grids; SSR stops at them by default ---
     params.angle_resolution   = 0.1;   % deg
-    params.delay_resolution   = 0.1;   % taps
+    params.delay_resolution   = 1;   % taps
     params.doppler_resolution = 0.1;   % taps
 
     % --- SSR: search half-width (+/- from coarse estimate), stage-1 angle step, min steps ---

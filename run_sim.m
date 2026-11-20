@@ -132,10 +132,15 @@ function r = run_trial(params, derivedParams, SNR_db, seed)
 %RUN_TRIAL One seeded trial: simulate -> coarse -> SSR -> errors (K x 3 each), estimates, BER (trials == 1).
     sim = simulate_trial(params, derivedParams, SNR_db, seed);
     chanParams = sim.chanParams;  params_t = sim.params_t;  n0 = sim.n0;
-    if strcmp(params_t.coarse_method, 'fused')
-        coarse = estimate_coarse_params_fused(sim.YTF, sim.YDD, sim.XTF, sim.XDD, params_t, chanParams, n0, derivedParams);
-    else
-        coarse = estimate_coarse_params(sim.YTF, sim.YDD, sim.XTF, sim.XDD, params_t, chanParams, n0, derivedParams);
+    switch params_t.coarse_method
+        case 'xcorr'
+            coarse = estimate_coarse_params(sim.YTF, sim.YDD, sim.XTF, sim.XDD, params_t, chanParams, n0, derivedParams);
+        case 'xcorr_new'
+            coarse = estimate_coarse_params_xcorr_new(sim.YTF, sim.YDD, sim.XTF, sim.XDD, params_t, chanParams, n0, derivedParams);
+        case 'fused'
+            coarse = estimate_coarse_params_fused(sim.YTF, sim.YDD, sim.XTF, sim.XDD, params_t, chanParams, n0, derivedParams);
+        otherwise
+            error('run_sim:coarseMethod', 'Unknown params.coarse_method ''%s''.', params_t.coarse_method);
     end
     [pce, ~] = compute_errors(chanParams, coarse, params_t);
     r.chanParams        = chanParams;

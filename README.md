@@ -47,7 +47,7 @@ run(fullfile(project_dir, 'run_single.m'));
 
 SSR stops at `targets_num` by default; set `params.ssr.max_J` to a positive integer to override this limit (`[]` = default). Residual-based stopping may stop earlier.
 
-Fractional delay: set `targets.delay` directly or use `params.epsilon` to override its fractional part (`[]` preserves input delays; scalar or per-target values in `[0,1)`). `params.angle_resolution`, `delay_resolution`, `doppler_resolution` (default `0.1`) round the generated truth and are the default SSR stopping steps (`params.ssr.min_step.a/r/v` override). SSR stage 1 searches angle at `ssr.length.a` and delay/Doppler at the min steps; stage 2 refines each selected angle at the angle min step. Coarse xcorr stays on integer taps/degrees; the fused estimator keeps its 1/16-tap refinement.
+Fractional delay: set `targets.delay` directly or use `params.epsilon` to override its fractional part (`[]` preserves input delays; scalar or per-target values in `[0,1)`). `params.angle_resolution`, `delay_resolution`, `doppler_resolution` round the generated truth and are the default SSR stopping steps (`params.ssr.min_step.a/r/v` override). SSR stage 1 searches angle at `ssr.length.a` and delay/Doppler at the min steps; stage 2 refines each selected angle at the angle min step. Coarse `'xcorr'` gives integer taps and integer degrees, `'xcorr_new'` gives integer taps and angles snapped to the SSR angle min step, and the fused estimator keeps its 1/16-tap refinement.
 
 `params.padLen` is the fixed guard length (samples, chosen by design; `generate_channel_params` errors if a delay exceeds it). Noise: `n0 = P_rx/(1+SNR)`; the Wiener pilot vector `y = Y*conj(X)/(|X|^2+n0)` follows `y = c*Phi*gains + noise` with `c` and the noise variance from `pilot_noise_model` (constant-modulus pilots), used by all gain fits.
 
@@ -55,7 +55,7 @@ Trial `i` is seeded with `rng(params.rng_seed_start + i - 1, 'threefry')` (same 
 
 Pilots (`config_pilots`): `pilot_blocks_def` gives structured delay/Doppler/random blocks per Tx, and every Tx without a block gets `n_pilotspertx` random pilots per trial (scalar or one value per Tx, `0` = none); an empty `pilot_blocks_def` makes all Tx random. A TF bin may carry only one Tx (`config_pilots` errors otherwise).
 
-`coarse_method`: `'xcorr'` (default) or `'fused'` (`estimate_coarse_params_fused`, needs delay and Doppler blocks in `pilot_blocks_def`): xcorr pairs angle/delay/Doppler; CLEAN: candidates snapped on pilot-arm spectra, refined to 1/16 tap on a local grid by coherent LS over all pilots, kept if they reduce the residual.
+`coarse_method`: `'xcorr'` (default), `'xcorr_new'` or `'fused'` (`estimate_coarse_params_fused`, needs delay and Doppler blocks in `pilot_blocks_def`). `'xcorr'` runs SIC on the Rx array, then per angle an MMSE-beamformed, Tx-steered DD xcorr. `'xcorr_new'` (`estimate_coarse_params_xcorr_new`) correlates every (Rx, Tx) pair with the transmitted DD grid, finds (delay, Doppler) cells on the angle-independent map `sum |C_rp|^2` (dynamic-range and noise-floor thresholds, at most `targets_num` cells), and estimates the angles of each cell on the Nr*Nt-element virtual array (position `ddlr*r - ddlt*p`) by a fine sin-grid matched filter plus OMP; angles snap to the SSR angle min step. `'fused'`: xcorr pairs angle/delay/Doppler; CLEAN: candidates snapped on pilot-arm spectra, refined to 1/16 tap on a local grid by coherent LS over all pilots, kept if they reduce the residual.
 
 ## Outputs
 

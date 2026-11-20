@@ -9,7 +9,7 @@ function coarse = estimate_coarse_params(YTF, YDD, XTF, XDD, params, chanParams,
     Nr = params.Nr;
     Nt = params.Nt;
     max_targets = params.targets_num;
-    interpolate_len = 64;  % FFT zero-pad length for angular spectrum interpolation
+    interpolate_len = 256;  % FFT zero-pad length for angular spectrum interpolation
 
     if params.skip_aoa
         %% --- Nr=1: skip SIC, fix AoA=0 ---
